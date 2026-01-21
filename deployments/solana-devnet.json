@@ -1,0 +1,13 @@
+{
+  "network": "Solana Devnet",
+  "programId": "5aMvnLtsZLDEMeQSPXucoX7b49uiUKzLnp8yNujrrmpp",
+  "config": {
+    "authority": "89ewZeMwwrs9c2xowLcH9RrXsX9zijwBNcBrywFvSovx",
+    "emergencyAdmin": "89ewZeMwwrs9c2xowLcH9RrXsX9zijwBNcBrywFvSovx",
+    "relayer": "DZv1eZCJrhjHTncDkutbTEPqyvAXB6b1bmprb4Vuv6t9",
+    "serverSigner": "6g9MofwALHv9AYs7iaGkicgbWvBRDx9aon4hU6yPPgrb",
+    "feeRecipient": "2p76pZoLvgUcf38gM4AzGHuT5rqi9BWMaHwtAkcXgXei"
+  },
+  "deployer": "89ewZeMwwrs9c2xowLcH9RrXsX9zijwBNcBrywFvSovx",
+  "timestamp": "2026-01-11T09:10:35.959Z"
+}
