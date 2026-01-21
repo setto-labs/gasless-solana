@@ -33,6 +33,27 @@ async function main() {
   console.log("    Setto Payment - Initialize Config");
   console.log("=".repeat(60));
 
+  // 0. Check if IDL exists (required for initialization)
+  const idlPath = path.resolve(PROJECT_ROOT, "target/idl/setto_payment.json");
+  if (!fs.existsSync(idlPath)) {
+    console.log("\n📦 IDL not found, building with anchor...");
+    const { execSync } = await import("child_process");
+    const targetDir = path.resolve(PROJECT_ROOT, "target");
+
+    // Fix ownership first if target dir exists and is owned by root
+    if (fs.existsSync(targetDir)) {
+      try {
+        fs.accessSync(targetDir, fs.constants.W_OK);
+      } catch {
+        console.log("⚠️  Fixing target directory permissions...");
+        execSync(`sudo chown -R ${process.env.USER}:${process.env.USER} ${targetDir}`, { stdio: "inherit" });
+      }
+    }
+
+    execSync("anchor build", { cwd: PROJECT_ROOT, stdio: "inherit" });
+    console.log("✅ IDL generated");
+  }
+
   // 1. Select network
   const { network } = await inquirer.prompt<{ network: NetworkKey }>([
     {
@@ -173,7 +194,6 @@ async function main() {
   console.log("\n⚙️ Initializing program config...");
 
   try {
-    const idlPath = path.resolve(PROJECT_ROOT, "target/idl/setto_payment.json");
     const idl = JSON.parse(fs.readFileSync(idlPath, "utf8"));
 
     // Override IDL address with user-provided programId (supports multi-network)

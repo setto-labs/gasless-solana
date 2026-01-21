@@ -223,7 +223,7 @@ async function main() {
   console.log(`Program ID:      ${programId} ${isNewProgram ? "(NEW)" : "(EXISTING)"}`);
   console.log(`Deployer:        ${deployerAddress}`);
   console.log("=".repeat(60));
-  console.log("\n⚠️  Note: Run './scripts/run/3-init.sh' after deployment to initialize config.");
+  console.log("\n⚠️  Note: Run './scripts/run/4-init.sh' after deployment to initialize config.");
 
   const { confirmDeploy } = await inquirer.prompt([
     {
