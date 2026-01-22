@@ -28,4 +28,7 @@ pub enum PaymentError {
 
     #[msg("Invalid address: zero pubkey not allowed")]
     InvalidAddress,
+
+    #[msg("Unauthorized: caller is not an authorized relayer")]
+    UnauthorizedRelayer,
 }

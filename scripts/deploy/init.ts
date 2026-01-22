@@ -155,10 +155,29 @@ async function main() {
     },
   ]);
 
+  const { relayerAddress } = await inquirer.prompt([
+    {
+      type: "input",
+      name: "relayerAddress",
+      message: "Initial Relayer address:",
+      validate: (input: string) => {
+        if (!input) return "Relayer address is required";
+        return isValidPublicKey(input) || "Invalid Solana address";
+      },
+    },
+  ]);
+
   // Calculate ServerSigner PDA
   const serverSignerPubkey = new PublicKey(serverSignerAddress);
   const [serverSignerPda] = PublicKey.findProgramAddressSync(
     [Buffer.from(PDA_SEEDS.SERVER_SIGNER), serverSignerPubkey.toBuffer()],
+    new PublicKey(programId)
+  );
+
+  // Calculate Relayer PDA
+  const relayerPubkey = new PublicKey(relayerAddress);
+  const [relayerPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from(PDA_SEEDS.RELAYER), relayerPubkey.toBuffer()],
     new PublicKey(programId)
   );
 
@@ -174,6 +193,8 @@ async function main() {
   console.log(`Server Signer:   ${serverSignerAddress}`);
   console.log(`  (PDA):         ${serverSignerPda.toBase58()}`);
   console.log(`Fee Recipient:   ${feeRecipientAddress}`);
+  console.log(`Relayer:         ${relayerAddress}`);
+  console.log(`  (PDA):         ${relayerPda.toBase58()}`);
   console.log("=".repeat(60));
 
   const { confirmInit } = await inquirer.prompt([
@@ -216,6 +237,8 @@ async function main() {
         serverSigner: serverSignerPubkey,
         serverSignerAccount: serverSignerPda,
         feeRecipient: new PublicKey(feeRecipientAddress),
+        relayer: relayerPubkey,
+        relayerAccount: relayerPda,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([authorityKeypair])
@@ -231,6 +254,7 @@ async function main() {
     console.log(`\n🔗 Explorer Links:`);
     console.log(`   Config: ${networkConfig.explorer}/account/${configPda.toBase58()}${clusterParam}`);
     console.log(`   ServerSigner: ${networkConfig.explorer}/account/${serverSignerPda.toBase58()}${clusterParam}`);
+    console.log(`   Relayer: ${networkConfig.explorer}/account/${relayerPda.toBase58()}${clusterParam}`);
     console.log(`   TX:     ${networkConfig.explorer}/tx/${tx}${clusterParam}`);
     console.log("");
 

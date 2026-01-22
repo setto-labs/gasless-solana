@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::PaymentError;
-use crate::state::{Config, ServerSigner};
+use crate::state::{Config, Relayer, ServerSigner};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -39,6 +39,20 @@ pub struct Initialize<'info> {
     /// CHECK: Just storing the address, validated in handler
     pub fee_recipient: UncheckedAccount<'info>,
 
+    /// Initial relayer for gasless transactions
+    /// CHECK: Just storing the address, validated in handler
+    pub relayer: UncheckedAccount<'info>,
+
+    /// Relayer PDA account (created during initialization)
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Relayer::INIT_SPACE,
+        seeds = [Relayer::SEED, relayer.key().as_ref()],
+        bump
+    )]
+    pub relayer_account: Account<'info, Relayer>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -56,6 +70,10 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
         ctx.accounts.fee_recipient.key() != Pubkey::default(),
         PaymentError::InvalidAddress
     );
+    require!(
+        ctx.accounts.relayer.key() != Pubkey::default(),
+        PaymentError::InvalidAddress
+    );
 
     // Initialize config
     let config = &mut ctx.accounts.config;
@@ -71,11 +89,18 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
     server_signer.is_active = true;
     server_signer.bump = ctx.bumps.server_signer_account;
 
+    // Initialize first relayer PDA
+    let relayer = &mut ctx.accounts.relayer_account;
+    relayer.relayer = ctx.accounts.relayer.key();
+    relayer.is_active = true;
+    relayer.bump = ctx.bumps.relayer_account;
+
     msg!("Config initialized");
     msg!("Authority: {}", config.authority);
     msg!("Emergency admin: {}", config.emergency_admin);
     msg!("Fee recipient: {}", config.fee_recipient);
     msg!("Initial server signer: {}", server_signer.signer);
+    msg!("Initial relayer: {}", relayer.relayer);
 
     Ok(())
 }

@@ -10,14 +10,22 @@ pub mod ed25519_program {
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use crate::errors::PaymentError;
-use crate::state::{Config, ServerSigner};
+use crate::state::{Config, Relayer, ServerSigner};
 
 #[derive(Accounts)]
 #[instruction(params: ProcessPaymentParams)]
 pub struct ProcessPayment<'info> {
-    /// Payer for transaction fees (anyone can pay, no relayer restriction)
+    /// Payer for transaction fees (must be authorized relayer)
     #[account(mut)]
     pub payer: Signer<'info>,
+
+    /// Relayer PDA - validates payer is an authorized relayer
+    #[account(
+        seeds = [Relayer::SEED, payer.key().as_ref()],
+        bump = relayer_account.bump,
+        constraint = relayer_account.is_active @ PaymentError::UnauthorizedRelayer
+    )]
+    pub relayer_account: Account<'info, Relayer>,
 
     /// User who owns the tokens (from)
     pub user: Signer<'info>,

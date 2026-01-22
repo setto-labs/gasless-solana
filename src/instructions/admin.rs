@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::PaymentError;
-use crate::state::{Config, ServerSigner};
+use crate::state::{Config, Relayer, ServerSigner};
 
 // ============================================
 // Pause / Unpause (Emergency Admin Only)
@@ -330,5 +330,179 @@ pub fn transfer_authority_handler(ctx: Context<TransferAuthority>) -> Result<()>
     ctx.accounts.config.authority = ctx.accounts.new_authority.key();
 
     msg!("Authority transferred: {} -> {}", old_authority, ctx.accounts.new_authority.key());
+    Ok(())
+}
+
+// ============================================
+// Add Relayer (Authority Only)
+// ============================================
+
+#[derive(Accounts)]
+pub struct AddRelayer<'info> {
+    #[account(
+        mut,
+        constraint = authority.key() == config.authority @ PaymentError::Unauthorized
+    )]
+    pub authority: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED],
+        bump = config.bump
+    )]
+    pub config: Account<'info, Config>,
+
+    /// New relayer address
+    /// CHECK: Just storing the address, validated in handler
+    pub new_relayer: UncheckedAccount<'info>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Relayer::INIT_SPACE,
+        seeds = [Relayer::SEED, new_relayer.key().as_ref()],
+        bump
+    )]
+    pub relayer_account: Account<'info, Relayer>,
+
+    pub system_program: Program<'info, System>,
+}
+
+pub fn add_relayer_handler(ctx: Context<AddRelayer>) -> Result<()> {
+    require!(
+        ctx.accounts.new_relayer.key() != Pubkey::default(),
+        PaymentError::InvalidAddress
+    );
+
+    let relayer = &mut ctx.accounts.relayer_account;
+    relayer.relayer = ctx.accounts.new_relayer.key();
+    relayer.is_active = true;
+    relayer.bump = ctx.bumps.relayer_account;
+
+    msg!("Relayer added: {}", ctx.accounts.new_relayer.key());
+    Ok(())
+}
+
+// ============================================
+// Remove Relayer (Authority Only)
+// ============================================
+
+#[derive(Accounts)]
+pub struct RemoveRelayer<'info> {
+    #[account(
+        mut,
+        constraint = authority.key() == config.authority @ PaymentError::Unauthorized
+    )]
+    pub authority: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED],
+        bump = config.bump
+    )]
+    pub config: Account<'info, Config>,
+
+    /// Relayer to remove
+    /// CHECK: Used for PDA derivation
+    pub relayer_to_remove: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [Relayer::SEED, relayer_to_remove.key().as_ref()],
+        bump = relayer_account.bump,
+        close = authority
+    )]
+    pub relayer_account: Account<'info, Relayer>,
+}
+
+pub fn remove_relayer_handler(ctx: Context<RemoveRelayer>) -> Result<()> {
+    msg!("Relayer removed: {}", ctx.accounts.relayer_to_remove.key());
+    Ok(())
+}
+
+// ============================================
+// Emergency Add Relayer (Emergency Admin Only)
+// ============================================
+
+#[derive(Accounts)]
+pub struct EmergencyAddRelayer<'info> {
+    #[account(
+        mut,
+        constraint = emergency_admin.key() == config.emergency_admin @ PaymentError::UnauthorizedEmergencyAdmin
+    )]
+    pub emergency_admin: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED],
+        bump = config.bump
+    )]
+    pub config: Account<'info, Config>,
+
+    /// New relayer address
+    /// CHECK: Just storing the address, validated in handler
+    pub new_relayer: UncheckedAccount<'info>,
+
+    #[account(
+        init,
+        payer = emergency_admin,
+        space = 8 + Relayer::INIT_SPACE,
+        seeds = [Relayer::SEED, new_relayer.key().as_ref()],
+        bump
+    )]
+    pub relayer_account: Account<'info, Relayer>,
+
+    pub system_program: Program<'info, System>,
+}
+
+pub fn emergency_add_relayer_handler(ctx: Context<EmergencyAddRelayer>) -> Result<()> {
+    require!(
+        ctx.accounts.new_relayer.key() != Pubkey::default(),
+        PaymentError::InvalidAddress
+    );
+
+    let relayer = &mut ctx.accounts.relayer_account;
+    relayer.relayer = ctx.accounts.new_relayer.key();
+    relayer.is_active = true;
+    relayer.bump = ctx.bumps.relayer_account;
+
+    msg!("EMERGENCY: Relayer added by {}: {}",
+         ctx.accounts.emergency_admin.key(),
+         ctx.accounts.new_relayer.key());
+    Ok(())
+}
+
+// ============================================
+// Emergency Remove Relayer (Emergency Admin Only)
+// ============================================
+
+#[derive(Accounts)]
+pub struct EmergencyRemoveRelayer<'info> {
+    #[account(
+        mut,
+        constraint = emergency_admin.key() == config.emergency_admin @ PaymentError::UnauthorizedEmergencyAdmin
+    )]
+    pub emergency_admin: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED],
+        bump = config.bump
+    )]
+    pub config: Account<'info, Config>,
+
+    /// Relayer to remove
+    /// CHECK: Used for PDA derivation
+    pub relayer_to_remove: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [Relayer::SEED, relayer_to_remove.key().as_ref()],
+        bump = relayer_account.bump,
+        close = emergency_admin
+    )]
+    pub relayer_account: Account<'info, Relayer>,
+}
+
+pub fn emergency_remove_relayer_handler(ctx: Context<EmergencyRemoveRelayer>) -> Result<()> {
+    msg!("EMERGENCY: Relayer removed by {}: {}",
+         ctx.accounts.emergency_admin.key(),
+         ctx.accounts.relayer_to_remove.key());
     Ok(())
 }

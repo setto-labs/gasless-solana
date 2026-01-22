@@ -12,6 +12,7 @@ import {
   ANCHOR_TOML_SECTIONS,
   CONFIG_OFFSETS,
   SERVER_SIGNER_OFFSETS,
+  RELAYER_OFFSETS,
   PDA_SEEDS,
   PROGRAM_NAME,
 } from "../constants";
@@ -201,4 +202,43 @@ export function printExplorerLink(network: NetworkKey, txSignature: string): voi
   console.log(
     `\n🔗 Transaction: ${networkConfig.explorer}/tx/${txSignature}${clusterParam}`
   );
+}
+
+// Relayer functions
+export interface RelayerData {
+  relayer: string;
+  isActive: boolean;
+  bump: number;
+}
+
+export function parseRelayerAccount(data: Buffer): RelayerData {
+  return {
+    relayer: new PublicKey(
+      data.subarray(RELAYER_OFFSETS.RELAYER, RELAYER_OFFSETS.RELAYER + 32)
+    ).toBase58(),
+    isActive: data[RELAYER_OFFSETS.IS_ACTIVE] === 1,
+    bump: data[RELAYER_OFFSETS.BUMP],
+  };
+}
+
+export function getRelayerPda(network: NetworkKey, relayerPubkey: PublicKey): PublicKey {
+  const programId = getProgramIdFromAnchorToml(network);
+  const [relayerPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from(PDA_SEEDS.RELAYER), relayerPubkey.toBuffer()],
+    programId
+  );
+  return relayerPda;
+}
+
+export async function getRelayerData(
+  connection: Connection,
+  network: NetworkKey,
+  relayerPubkey: PublicKey
+): Promise<RelayerData | null> {
+  const relayerPda = getRelayerPda(network, relayerPubkey);
+  const account = await connection.getAccountInfo(relayerPda);
+  if (!account) {
+    return null;
+  }
+  return parseRelayerAccount(account.data);
 }

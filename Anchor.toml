@@ -10,7 +10,7 @@ members = ["."]
 
 # Program IDs - auto-updated by deploy script (npm run deploy)
 [programs.localnet]
-setto_payment = "11111111111111111111111111111111"
+setto_payment = "5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB"
 
 [programs.devnet]
 setto_payment = "5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB"

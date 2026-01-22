@@ -66,3 +66,6 @@ echo "SHA256: $HASH"
 echo ""
 echo "Save this hash for verification after deployment."
 echo ""
+
+echo "Next step: Run './scripts/run/3-sync-public-repo.sh' to sync to public repo"
+echo ""

@@ -17,7 +17,7 @@ export type NetworkKey = "mainnet" | "devnet";
 
 // RPC Endpoints
 export const RPC_ENDPOINTS = {
-  mainnet: "https://api.mainnet-beta.solana.com",
+  mainnet: "https://solana-mainnet.g.alchemy.com/v2/EJMhDzFNgri2cgmdC7OtN",
   devnet: "https://api.devnet.solana.com",
 } as const;
 
@@ -74,10 +74,20 @@ export const SERVER_SIGNER_OFFSETS = {
   BUMP: 41,
 } as const;
 
+// Relayer Account Structure Offsets
+// discriminator (8) + relayer (32) + is_active (1) + bump (1)
+export const RELAYER_OFFSETS = {
+  DISCRIMINATOR: 0,
+  RELAYER: 8,
+  IS_ACTIVE: 40,
+  BUMP: 41,
+} as const;
+
 // PDA Seeds
 export const PDA_SEEDS = {
   CONFIG: "config",
   SERVER_SIGNER: "server_signer",
+  RELAYER: "relayer",
 } as const;
 
 // Program Name (Anchor.toml에서 사용)

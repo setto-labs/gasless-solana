@@ -9,7 +9,7 @@ echo "========================================"
 echo ""
 
 # Configuration
-PUBLIC_REPO_URL="git@github-settopay:settopay-cripto/setto-pay-solana.git"
+PUBLIC_REPO_URL="git@github-setto-labs:setto-labs/gasless-solana.git"
 PUBLIC_REPO_DIR="/tmp/setto-solana-programs"
 
 # Files to sync
@@ -52,6 +52,14 @@ for item in "${FILES_TO_SYNC[@]}"; do
         echo "  Warning: $item not found"
     fi
 done
+
+# Copy README
+if [ -f "README.public.md" ]; then
+    cp "README.public.md" "$PUBLIC_REPO_DIR/README.md"
+    echo "  Copied: README.public.md -> README.md"
+else
+    echo "  Warning: README.public.md not found"
+fi
 
 # Show status
 echo ""

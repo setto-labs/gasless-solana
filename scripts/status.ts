@@ -7,6 +7,8 @@ import {
   NETWORKS,
   NetworkKey,
   CONFIG_OFFSETS,
+  SERVER_SIGNER_OFFSETS,
+  RELAYER_OFFSETS,
   PDA_SEEDS,
   ANCHOR_TOML_SECTIONS,
   PROGRAM_NAME,
@@ -49,16 +51,48 @@ interface ConfigData {
 function parseConfigAccount(data: Buffer): ConfigData {
   return {
     authority: new PublicKey(
-      data.slice(CONFIG_OFFSETS.AUTHORITY, CONFIG_OFFSETS.AUTHORITY + 32)
+      data.subarray(CONFIG_OFFSETS.AUTHORITY, CONFIG_OFFSETS.AUTHORITY + 32)
     ).toBase58(),
     emergencyAdmin: new PublicKey(
-      data.slice(CONFIG_OFFSETS.EMERGENCY_ADMIN, CONFIG_OFFSETS.EMERGENCY_ADMIN + 32)
+      data.subarray(CONFIG_OFFSETS.EMERGENCY_ADMIN, CONFIG_OFFSETS.EMERGENCY_ADMIN + 32)
     ).toBase58(),
     feeRecipient: new PublicKey(
-      data.slice(CONFIG_OFFSETS.FEE_RECIPIENT, CONFIG_OFFSETS.FEE_RECIPIENT + 32)
+      data.subarray(CONFIG_OFFSETS.FEE_RECIPIENT, CONFIG_OFFSETS.FEE_RECIPIENT + 32)
     ).toBase58(),
     paused: data[CONFIG_OFFSETS.PAUSED] === 1,
     bump: data[CONFIG_OFFSETS.BUMP],
+  };
+}
+
+interface ServerSignerData {
+  signer: string;
+  isActive: boolean;
+  bump: number;
+}
+
+function parseServerSignerAccount(data: Buffer): ServerSignerData {
+  return {
+    signer: new PublicKey(
+      data.subarray(SERVER_SIGNER_OFFSETS.SIGNER, SERVER_SIGNER_OFFSETS.SIGNER + 32)
+    ).toBase58(),
+    isActive: data[SERVER_SIGNER_OFFSETS.IS_ACTIVE] === 1,
+    bump: data[SERVER_SIGNER_OFFSETS.BUMP],
+  };
+}
+
+interface RelayerData {
+  relayer: string;
+  isActive: boolean;
+  bump: number;
+}
+
+function parseRelayerAccount(data: Buffer): RelayerData {
+  return {
+    relayer: new PublicKey(
+      data.subarray(RELAYER_OFFSETS.RELAYER, RELAYER_OFFSETS.RELAYER + 32)
+    ).toBase58(),
+    isActive: data[RELAYER_OFFSETS.IS_ACTIVE] === 1,
+    bump: data[RELAYER_OFFSETS.BUMP],
   };
 }
 
@@ -132,11 +166,65 @@ async function main() {
   console.log(`Emergency Admin: ${configData.emergencyAdmin}`);
   console.log(`Fee Recipient:   ${configData.feeRecipient}`);
   console.log(`Paused:          ${configData.paused ? "YES ⚠️" : "NO ✅"}`);
-  console.log("");
-  console.log("Note: Server signers are stored as separate PDA accounts.");
-  console.log("      Use 'add-server-signer' / 'remove-server-signer' to manage.");
 
-  // 5. Explorer links
+  // Discriminators from IDL (first 8 bytes of account data)
+  const SERVER_SIGNER_DISCRIMINATOR = Buffer.from([45, 255, 4, 21, 31, 92, 155, 235]);
+  const RELAYER_DISCRIMINATOR = Buffer.from([168, 116, 52, 174, 161, 196, 71, 218]);
+
+  // 5. Fetch all 42-byte accounts (both ServerSigner and Relayer have same size)
+  const allAccounts = await connection.getProgramAccounts(programId, {
+    filters: [{ dataSize: 42 }],
+  });
+
+  // 6. Display Server Signers (filter by discriminator)
+  console.log("\n" + "-".repeat(60));
+  console.log("Server Signers (All)");
+  console.log("-".repeat(60));
+
+  const serverSigners = allAccounts
+    .filter((account) => {
+      const discriminator = account.account.data.subarray(0, 8);
+      return discriminator.equals(SERVER_SIGNER_DISCRIMINATOR);
+    })
+    .map((account) => ({
+      pda: account.pubkey.toBase58(),
+      data: parseServerSignerAccount(account.account.data),
+    }));
+
+  if (serverSigners.length === 0) {
+    console.log("  No ServerSigners registered");
+  } else {
+    serverSigners.forEach((s, i) => {
+      const status = s.data.isActive ? "✅ ACTIVE" : "❌ INACTIVE";
+      console.log(`  ${i + 1}. ${s.data.signer} ${status}`);
+    });
+  }
+
+  // 7. Display Relayers (filter by discriminator)
+  console.log("\n" + "-".repeat(60));
+  console.log("Relayers (All)");
+  console.log("-".repeat(60));
+
+  const relayers = allAccounts
+    .filter((account) => {
+      const discriminator = account.account.data.subarray(0, 8);
+      return discriminator.equals(RELAYER_DISCRIMINATOR);
+    })
+    .map((account) => ({
+      pda: account.pubkey.toBase58(),
+      data: parseRelayerAccount(account.account.data),
+    }));
+
+  if (relayers.length === 0) {
+    console.log("  No Relayers registered");
+  } else {
+    relayers.forEach((r, i) => {
+      const status = r.data.isActive ? "✅ ACTIVE" : "❌ INACTIVE";
+      console.log(`  ${i + 1}. ${r.data.relayer} ${status}`);
+    });
+  }
+
+  // 7. Explorer links
   const clusterParam = network === "mainnet" ? "" : `?cluster=${networkConfig.cluster}`;
   console.log("\n" + "-".repeat(60));
   console.log("Explorer Links");

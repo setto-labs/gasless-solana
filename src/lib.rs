@@ -12,11 +12,11 @@ declare_id!("5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB");
 
 #[cfg(not(feature = "no-entrypoint"))]
 security_txt! {
-    name: "Setto Payment",
-    project_url: "https://settopay.com",
-    contacts: "email:security@settopay.com",
-    policy: "https://settopay.com/security",
-    source_code: "https://github.com/settopay-cripto/setto-pay-solana"
+    name: "Setto",
+    project_url: "https://setto.page",
+    contacts: "email:security@setto.page",
+    policy: "https://setto.page/security",
+    source_code: "https://github.com/setto-labs/gasless-solana"
 }
 
 #[program]
@@ -70,6 +70,16 @@ pub mod setto_payment {
         instructions::admin::emergency_remove_server_signer_handler(ctx)
     }
 
+    /// Emergency add relayer (when key rotation needed urgently)
+    pub fn emergency_add_relayer(ctx: Context<EmergencyAddRelayer>) -> Result<()> {
+        instructions::admin::emergency_add_relayer_handler(ctx)
+    }
+
+    /// Emergency remove relayer (when key leaked)
+    pub fn emergency_remove_relayer(ctx: Context<EmergencyRemoveRelayer>) -> Result<()> {
+        instructions::admin::emergency_remove_relayer_handler(ctx)
+    }
+
     // ============================================
     // Authority Functions
     // ============================================
@@ -97,6 +107,16 @@ pub mod setto_payment {
     /// Transfer authority to new address
     pub fn transfer_authority(ctx: Context<TransferAuthority>) -> Result<()> {
         instructions::admin::transfer_authority_handler(ctx)
+    }
+
+    /// Add a new relayer
+    pub fn add_relayer(ctx: Context<AddRelayer>) -> Result<()> {
+        instructions::admin::add_relayer_handler(ctx)
+    }
+
+    /// Remove a relayer
+    pub fn remove_relayer(ctx: Context<RemoveRelayer>) -> Result<()> {
+        instructions::admin::remove_relayer_handler(ctx)
     }
 
 }
