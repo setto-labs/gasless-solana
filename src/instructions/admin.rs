@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::PaymentError;
-use crate::state::{Config, Relayer, ServerSigner};
+use crate::state::{Config, Delegate, Relayer, ServerSigner};
 
 // ============================================
 // Pause / Unpause (Emergency Admin Only)
@@ -504,5 +504,44 @@ pub fn emergency_remove_relayer_handler(ctx: Context<EmergencyRemoveRelayer>) ->
     msg!("EMERGENCY: Relayer removed by {}: {}",
          ctx.accounts.emergency_admin.key(),
          ctx.accounts.relayer_to_remove.key());
+    Ok(())
+}
+
+// ============================================
+// Initialize Delegate (Authority Only)
+// One-time migration for existing deployments
+// ============================================
+
+#[derive(Accounts)]
+pub struct InitializeDelegate<'info> {
+    #[account(
+        mut,
+        constraint = authority.key() == config.authority @ PaymentError::Unauthorized
+    )]
+    pub authority: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED],
+        bump = config.bump
+    )]
+    pub config: Account<'info, Config>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Delegate::INIT_SPACE,
+        seeds = [Delegate::SEED],
+        bump
+    )]
+    pub delegate: Account<'info, Delegate>,
+
+    pub system_program: Program<'info, System>,
+}
+
+pub fn initialize_delegate_handler(ctx: Context<InitializeDelegate>) -> Result<()> {
+    let delegate = &mut ctx.accounts.delegate;
+    delegate.bump = ctx.bumps.delegate;
+
+    msg!("Delegate PDA initialized: {}", ctx.accounts.delegate.key());
     Ok(())
 }

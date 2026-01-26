@@ -21,19 +21,19 @@ echo ""
 
 # Select network
 echo "Select network:"
-echo "  1) Devnet"
-echo "  2) Mainnet"
+echo "  1) Mainnet"
+echo "  2) Devnet"
 echo ""
 read -p "Enter choice [1-2]: " network_choice
 
 case $network_choice in
     1)
-        NETWORK="devnet"
-        RPC_URL="https://api.devnet.solana.com"
-        ;;
-    2)
         NETWORK="mainnet"
         RPC_URL="https://api.mainnet-beta.solana.com"
+        ;;
+    2)
+        NETWORK="devnet"
+        RPC_URL="https://api.devnet.solana.com"
         ;;
     *)
         echo "Invalid choice"

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::PaymentError;
-use crate::state::{Config, Relayer, ServerSigner};
+use crate::state::{Config, Delegate, Relayer, ServerSigner};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -53,6 +53,16 @@ pub struct Initialize<'info> {
     )]
     pub relayer_account: Account<'info, Relayer>,
 
+    /// Delegate PDA for gasless token transfers
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Delegate::INIT_SPACE,
+        seeds = [Delegate::SEED],
+        bump
+    )]
+    pub delegate: Account<'info, Delegate>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -95,12 +105,17 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
     relayer.is_active = true;
     relayer.bump = ctx.bumps.relayer_account;
 
+    // Initialize delegate PDA
+    let delegate = &mut ctx.accounts.delegate;
+    delegate.bump = ctx.bumps.delegate;
+
     msg!("Config initialized");
     msg!("Authority: {}", config.authority);
     msg!("Emergency admin: {}", config.emergency_admin);
     msg!("Fee recipient: {}", config.fee_recipient);
     msg!("Initial server signer: {}", server_signer.signer);
     msg!("Initial relayer: {}", relayer.relayer);
+    msg!("Delegate PDA: {}", ctx.accounts.delegate.key());
 
     Ok(())
 }

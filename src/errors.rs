@@ -2,33 +2,42 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum PaymentError {
-    #[msg("Program is paused")]
+    #[msg("Paused")]
     Paused,
 
-    #[msg("Program is not paused")]
+    #[msg("Not paused")]
     NotPaused,
 
-    #[msg("Invalid amount: must be greater than zero")]
+    #[msg("Invalid amount")]
     InvalidAmount,
 
-    #[msg("Unauthorized: caller is not authority")]
+    #[msg("Unauthorized")]
     Unauthorized,
 
-    #[msg("Unauthorized: caller is not emergency admin")]
+    #[msg("Unauthorized emergency admin")]
     UnauthorizedEmergencyAdmin,
 
-    #[msg("Unauthorized: server signer is not active")]
+    #[msg("Unauthorized server signer")]
     UnauthorizedServerSigner,
 
-    #[msg("Invalid server signature")]
+    #[msg("Invalid signature")]
     InvalidServerSignature,
 
-    #[msg("Payment expired: deadline passed")]
+    #[msg("Payment expired")]
     PaymentExpired,
 
-    #[msg("Invalid address: zero pubkey not allowed")]
+    #[msg("Invalid address")]
     InvalidAddress,
 
-    #[msg("Unauthorized: caller is not an authorized relayer")]
+    #[msg("Unauthorized relayer")]
     UnauthorizedRelayer,
+
+    #[msg("Delegate not set")]
+    DelegateNotSet,
+
+    #[msg("Invalid delegate")]
+    InvalidDelegate,
+
+    #[msg("Insufficient delegated amount")]
+    InsufficientDelegatedAmount,
 }

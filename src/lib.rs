@@ -33,7 +33,7 @@ pub mod setto_payment {
         instructions::initialize::initialize_handler(ctx)
     }
 
-    /// Process a single payment
+    /// Process a single payment (user signs)
     /// - Verifies server signature (Ed25519) from authorized signer
     /// - Checks deadline
     /// - Transfers amount to pool
@@ -44,6 +44,19 @@ pub mod setto_payment {
         params: ProcessPaymentParams,
     ) -> Result<()> {
         instructions::process_payment::process_payment_handler(ctx, params)
+    }
+
+    /// Process a single payment via delegate (gasless, user doesn't sign)
+    /// - User must have approved Delegate PDA via SPL Token approve
+    /// - Verifies server signature (Ed25519) from authorized signer
+    /// - Checks deadline
+    /// - Delegate PDA transfers tokens on behalf of user
+    /// - Logs payment info for tracking
+    pub fn process_payment_delegated(
+        ctx: Context<ProcessPaymentDelegated>,
+        params: ProcessPaymentDelegatedParams,
+    ) -> Result<()> {
+        instructions::process_payment_delegated::process_payment_delegated_handler(ctx, params)
     }
 
     // ============================================
@@ -117,6 +130,11 @@ pub mod setto_payment {
     /// Remove a relayer
     pub fn remove_relayer(ctx: Context<RemoveRelayer>) -> Result<()> {
         instructions::admin::remove_relayer_handler(ctx)
+    }
+
+    /// Initialize delegate PDA (one-time migration for existing deployments)
+    pub fn initialize_delegate(ctx: Context<InitializeDelegate>) -> Result<()> {
+        instructions::admin::initialize_delegate_handler(ctx)
     }
 
 }

@@ -3,11 +3,11 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use super::utils::{verify_server_signature, PaymentMessageParams};
 use crate::errors::PaymentError;
-use crate::state::{Config, Relayer, ServerSigner};
+use crate::state::{Config, Delegate, Relayer, ServerSigner};
 
 #[derive(Accounts)]
-#[instruction(params: ProcessPaymentParams)]
-pub struct ProcessPayment<'info> {
+#[instruction(params: ProcessPaymentDelegatedParams)]
+pub struct ProcessPaymentDelegated<'info> {
     /// Payer for transaction fees (must be authorized relayer)
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -20,8 +20,9 @@ pub struct ProcessPayment<'info> {
     )]
     pub relayer_account: Account<'info, Relayer>,
 
-    /// User who owns the tokens (from)
-    pub user: Signer<'info>,
+    /// User who owns the tokens (NOT a signer - delegate handles transfer)
+    /// CHECK: User doesn't need to sign, delegate PDA has transfer authority
+    pub user: AccountInfo<'info>,
 
     #[account(
         seeds = [Config::SEED],
@@ -29,6 +30,13 @@ pub struct ProcessPayment<'info> {
         constraint = !config.paused @ PaymentError::Paused
     )]
     pub config: Account<'info, Config>,
+
+    /// Delegate PDA - has authority to transfer tokens on behalf of users
+    #[account(
+        seeds = [Delegate::SEED],
+        bump = delegate.bump,
+    )]
+    pub delegate: Account<'info, Delegate>,
 
     /// Server signer PDA - validates the signature came from an authorized signer
     #[account(
@@ -42,10 +50,14 @@ pub struct ProcessPayment<'info> {
     pub token_mint: Account<'info, Mint>,
 
     /// User's token account (source)
+    /// Must have delegate set to our Delegate PDA with sufficient delegated_amount
     #[account(
         mut,
         constraint = user_token_account.owner == user.key(),
-        constraint = user_token_account.mint == token_mint.key()
+        constraint = user_token_account.mint == token_mint.key(),
+        constraint = user_token_account.delegate.is_some() @ PaymentError::DelegateNotSet,
+        constraint = user_token_account.delegate.unwrap() == delegate.key() @ PaymentError::InvalidDelegate,
+        constraint = user_token_account.delegated_amount >= params.amount + params.fee_amount @ PaymentError::InsufficientDelegatedAmount
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
@@ -77,7 +89,7 @@ pub struct ProcessPayment<'info> {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct ProcessPaymentParams {
+pub struct ProcessPaymentDelegatedParams {
     pub amount: u64,
     pub fee_amount: u64,
     pub payment_id: u64,
@@ -86,7 +98,10 @@ pub struct ProcessPaymentParams {
     pub server_signature: [u8; 64],
 }
 
-pub fn process_payment_handler(ctx: Context<ProcessPayment>, params: ProcessPaymentParams) -> Result<()> {
+pub fn process_payment_delegated_handler(
+    ctx: Context<ProcessPaymentDelegated>,
+    params: ProcessPaymentDelegatedParams,
+) -> Result<()> {
     // 1. Deadline validation
     let clock = Clock::get()?;
     require!(
@@ -114,16 +129,20 @@ pub fn process_payment_handler(ctx: Context<ProcessPayment>, params: ProcessPaym
     // 3. Amount validation
     require!(params.amount > 0, PaymentError::InvalidAmount);
 
-    // 4. Transfer amount to pool
+    // 4. Transfer amount to pool using Delegate PDA
+    let delegate_seeds = &[Delegate::SEED, &[ctx.accounts.delegate.bump]];
+    let signer_seeds = &[&delegate_seeds[..]];
+
     let transfer_to_pool = Transfer {
         from: ctx.accounts.user_token_account.to_account_info(),
         to: ctx.accounts.pool_token_account.to_account_info(),
-        authority: ctx.accounts.user.to_account_info(),
+        authority: ctx.accounts.delegate.to_account_info(),
     };
     token::transfer(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             transfer_to_pool,
+            signer_seeds,
         ),
         params.amount,
     )?;
@@ -133,19 +152,20 @@ pub fn process_payment_handler(ctx: Context<ProcessPayment>, params: ProcessPaym
         let transfer_to_fee = Transfer {
             from: ctx.accounts.user_token_account.to_account_info(),
             to: ctx.accounts.fee_token_account.to_account_info(),
-            authority: ctx.accounts.user.to_account_info(),
+            authority: ctx.accounts.delegate.to_account_info(),
         };
         token::transfer(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 transfer_to_fee,
+                signer_seeds,
             ),
             params.fee_amount,
         )?;
     }
 
     // 6. Emit payment log
-    msg!("PAYMENT_PROCESSED");
+    msg!("PAYMENT_PROCESSED_DELEGATED");
     msg!("payment_id: {}", params.payment_id);
     msg!("from: {}", ctx.accounts.user.key());
     msg!("to: {}", ctx.accounts.to.key());
