@@ -71,7 +71,7 @@ pub struct ProcessPaymentDelegated<'info> {
     /// Fee recipient's token account (receives fee)
     #[account(
         mut,
-        constraint = fee_token_account.owner == config.fee_recipient,
+        constraint = fee_token_account.owner == params.fee_recipient @ PaymentError::InvalidFeeRecipient,
         constraint = fee_token_account.mint == token_mint.key()
     )]
     pub fee_token_account: Account<'info, TokenAccount>,
@@ -92,6 +92,7 @@ pub struct ProcessPaymentDelegated<'info> {
 pub struct ProcessPaymentDelegatedParams {
     pub amount: u64,
     pub fee_amount: u64,
+    pub fee_recipient: Pubkey,
     pub payment_id: u64,
     pub deadline: i64,
     pub server_signer: Pubkey,
@@ -110,6 +111,8 @@ pub fn process_payment_delegated_handler(
     );
 
     // 2. Server signature verification (Ed25519)
+    // Note: fee_recipient is NOT in server signature (same as EVM)
+    // It's passed as instruction param and protected by relayer TX signature
     let msg_params = PaymentMessageParams {
         payment_id: params.payment_id,
         amount: params.amount,
@@ -173,6 +176,7 @@ pub fn process_payment_delegated_handler(
     msg!("token: {}", ctx.accounts.token_mint.key());
     msg!("amount: {}", params.amount);
     msg!("fee: {}", params.fee_amount);
+    msg!("fee_recipient: {}", params.fee_recipient);
 
     Ok(())
 }

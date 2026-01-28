@@ -11,8 +11,6 @@ pub struct Config {
     /// Emergency admin for pause/unpause (operational wallet)
     /// Can: pause, unpause, emergency_add/remove_server_signer
     pub emergency_admin: Pubkey,
-    /// Fee recipient address (receives platform fees)
-    pub fee_recipient: Pubkey,
     /// Emergency pause flag
     pub paused: bool,
     /// Bump seed for PDA

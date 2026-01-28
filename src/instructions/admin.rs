@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::PaymentError;
-use crate::state::{Config, Delegate, Relayer, ServerSigner};
+use crate::state::{Config, Relayer, ServerSigner};
 
 // ============================================
 // Pause / Unpause (Emergency Admin Only)
@@ -262,42 +262,6 @@ pub fn emergency_remove_server_signer_handler(ctx: Context<EmergencyRemoveServer
 }
 
 // ============================================
-// Set Fee Recipient
-// ============================================
-
-#[derive(Accounts)]
-pub struct SetFeeRecipient<'info> {
-    #[account(
-        constraint = authority.key() == config.authority @ PaymentError::Unauthorized
-    )]
-    pub authority: Signer<'info>,
-
-    #[account(
-        mut,
-        seeds = [Config::SEED],
-        bump = config.bump
-    )]
-    pub config: Account<'info, Config>,
-
-    /// New fee recipient address
-    /// CHECK: Just storing the address, validated in handler
-    pub new_fee_recipient: UncheckedAccount<'info>,
-}
-
-pub fn set_fee_recipient_handler(ctx: Context<SetFeeRecipient>) -> Result<()> {
-    require!(
-        ctx.accounts.new_fee_recipient.key() != Pubkey::default(),
-        PaymentError::InvalidAddress
-    );
-
-    let old_recipient = ctx.accounts.config.fee_recipient;
-    ctx.accounts.config.fee_recipient = ctx.accounts.new_fee_recipient.key();
-
-    msg!("Fee recipient changed: {} -> {}", old_recipient, ctx.accounts.new_fee_recipient.key());
-    Ok(())
-}
-
-// ============================================
 // Transfer Authority
 // ============================================
 
@@ -504,44 +468,5 @@ pub fn emergency_remove_relayer_handler(ctx: Context<EmergencyRemoveRelayer>) ->
     msg!("EMERGENCY: Relayer removed by {}: {}",
          ctx.accounts.emergency_admin.key(),
          ctx.accounts.relayer_to_remove.key());
-    Ok(())
-}
-
-// ============================================
-// Initialize Delegate (Authority Only)
-// One-time migration for existing deployments
-// ============================================
-
-#[derive(Accounts)]
-pub struct InitializeDelegate<'info> {
-    #[account(
-        mut,
-        constraint = authority.key() == config.authority @ PaymentError::Unauthorized
-    )]
-    pub authority: Signer<'info>,
-
-    #[account(
-        seeds = [Config::SEED],
-        bump = config.bump
-    )]
-    pub config: Account<'info, Config>,
-
-    #[account(
-        init,
-        payer = authority,
-        space = 8 + Delegate::INIT_SPACE,
-        seeds = [Delegate::SEED],
-        bump
-    )]
-    pub delegate: Account<'info, Delegate>,
-
-    pub system_program: Program<'info, System>,
-}
-
-pub fn initialize_delegate_handler(ctx: Context<InitializeDelegate>) -> Result<()> {
-    let delegate = &mut ctx.accounts.delegate;
-    delegate.bump = ctx.bumps.delegate;
-
-    msg!("Delegate PDA initialized: {}", ctx.accounts.delegate.key());
     Ok(())
 }

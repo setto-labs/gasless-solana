@@ -40,4 +40,7 @@ pub enum PaymentError {
 
     #[msg("Insufficient delegated amount")]
     InsufficientDelegatedAmount,
+
+    #[msg("Invalid fee recipient")]
+    InvalidFeeRecipient,
 }

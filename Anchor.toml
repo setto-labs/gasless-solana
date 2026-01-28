@@ -13,7 +13,7 @@ members = ["."]
 setto_payment = "5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB"
 
 [programs.devnet]
-setto_payment = "5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB"
+setto_payment = "DXxCKeaee3YD1HeA1UcBxTiHGZYFDZQ34Q2bjY87Nyoc"
 
 [programs.mainnet]
 setto_payment = "5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB"

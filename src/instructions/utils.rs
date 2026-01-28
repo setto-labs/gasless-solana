@@ -11,6 +11,8 @@ pub mod ed25519_program {
 }
 
 /// Common payment parameters for signature verification
+/// Note: fee_recipient is NOT included - it's passed as instruction param
+/// and protected by relayer TX signature (same as EVM pattern)
 pub struct PaymentMessageParams {
     pub payment_id: u64,
     pub amount: u64,
@@ -77,15 +79,16 @@ pub fn verify_server_signature(
 }
 
 /// Build the message to be signed by the server
-/// Format:
+/// Format (same as EVM - fee_recipient NOT included):
 /// - payment_id (8 bytes, u64)
 /// - user (32 bytes, Pubkey)
 /// - pool (32 bytes, Pubkey)
 /// - to (32 bytes, Pubkey)
 /// - token (32 bytes, Pubkey)
 /// - amount (8 bytes, u64)
-/// - fee (8 bytes, u64)
+/// - fee_amount (8 bytes, u64)
 /// - deadline (8 bytes, i64)
+/// Total: 160 bytes
 pub fn build_payment_message(
     params: &PaymentMessageParams,
     user: &Pubkey,

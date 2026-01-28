@@ -35,10 +35,6 @@ pub struct Initialize<'info> {
     )]
     pub server_signer_account: Account<'info, ServerSigner>,
 
-    /// Fee recipient account (receives platform fees)
-    /// CHECK: Just storing the address, validated in handler
-    pub fee_recipient: UncheckedAccount<'info>,
-
     /// Initial relayer for gasless transactions
     /// CHECK: Just storing the address, validated in handler
     pub relayer: UncheckedAccount<'info>,
@@ -77,10 +73,6 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
         PaymentError::InvalidAddress
     );
     require!(
-        ctx.accounts.fee_recipient.key() != Pubkey::default(),
-        PaymentError::InvalidAddress
-    );
-    require!(
         ctx.accounts.relayer.key() != Pubkey::default(),
         PaymentError::InvalidAddress
     );
@@ -89,7 +81,6 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
     let config = &mut ctx.accounts.config;
     config.authority = ctx.accounts.authority.key();
     config.emergency_admin = ctx.accounts.emergency_admin.key();
-    config.fee_recipient = ctx.accounts.fee_recipient.key();
     config.paused = false;
     config.bump = ctx.bumps.config;
 
@@ -112,7 +103,6 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
     msg!("Config initialized");
     msg!("Authority: {}", config.authority);
     msg!("Emergency admin: {}", config.emergency_admin);
-    msg!("Fee recipient: {}", config.fee_recipient);
     msg!("Initial server signer: {}", server_signer.signer);
     msg!("Initial relayer: {}", relayer.relayer);
     msg!("Delegate PDA: {}", ctx.accounts.delegate.key());

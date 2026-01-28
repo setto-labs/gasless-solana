@@ -8,7 +8,7 @@ pub mod state;
 use instructions::*;
 
 // Program ID - auto-updated by deploy script (npm run deploy)
-declare_id!("5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB");
+declare_id!("DXxCKeaee3YD1HeA1UcBxTiHGZYFDZQ34Q2bjY87Nyoc");
 
 #[cfg(not(feature = "no-entrypoint"))]
 security_txt! {
@@ -112,11 +112,6 @@ pub mod setto_payment {
         instructions::admin::remove_server_signer_handler(ctx)
     }
 
-    /// Update fee recipient address
-    pub fn set_fee_recipient(ctx: Context<SetFeeRecipient>) -> Result<()> {
-        instructions::admin::set_fee_recipient_handler(ctx)
-    }
-
     /// Transfer authority to new address
     pub fn transfer_authority(ctx: Context<TransferAuthority>) -> Result<()> {
         instructions::admin::transfer_authority_handler(ctx)
@@ -131,10 +126,4 @@ pub mod setto_payment {
     pub fn remove_relayer(ctx: Context<RemoveRelayer>) -> Result<()> {
         instructions::admin::remove_relayer_handler(ctx)
     }
-
-    /// Initialize delegate PDA (one-time migration for existing deployments)
-    pub fn initialize_delegate(ctx: Context<InitializeDelegate>) -> Result<()> {
-        instructions::admin::initialize_delegate_handler(ctx)
-    }
-
 }
