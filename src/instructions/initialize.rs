@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::PaymentError;
-use crate::state::{Config, Delegate, Relayer, ServerSigner};
+use crate::state::{Config, Delegate, ServerSigner};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -35,20 +35,6 @@ pub struct Initialize<'info> {
     )]
     pub server_signer_account: Account<'info, ServerSigner>,
 
-    /// Initial relayer for gasless transactions
-    /// CHECK: Just storing the address, validated in handler
-    pub relayer: UncheckedAccount<'info>,
-
-    /// Relayer PDA account (created during initialization)
-    #[account(
-        init,
-        payer = authority,
-        space = 8 + Relayer::INIT_SPACE,
-        seeds = [Relayer::SEED, relayer.key().as_ref()],
-        bump
-    )]
-    pub relayer_account: Account<'info, Relayer>,
-
     /// Delegate PDA for gasless token transfers
     #[account(
         init,
@@ -63,7 +49,6 @@ pub struct Initialize<'info> {
 }
 
 pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
-    // Zero address validation
     require!(
         ctx.accounts.emergency_admin.key() != Pubkey::default(),
         PaymentError::InvalidAddress
@@ -72,31 +57,18 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
         ctx.accounts.server_signer.key() != Pubkey::default(),
         PaymentError::InvalidAddress
     );
-    require!(
-        ctx.accounts.relayer.key() != Pubkey::default(),
-        PaymentError::InvalidAddress
-    );
 
-    // Initialize config
     let config = &mut ctx.accounts.config;
     config.authority = ctx.accounts.authority.key();
     config.emergency_admin = ctx.accounts.emergency_admin.key();
     config.paused = false;
     config.bump = ctx.bumps.config;
 
-    // Initialize first server signer PDA
     let server_signer = &mut ctx.accounts.server_signer_account;
     server_signer.signer = ctx.accounts.server_signer.key();
     server_signer.is_active = true;
     server_signer.bump = ctx.bumps.server_signer_account;
 
-    // Initialize first relayer PDA
-    let relayer = &mut ctx.accounts.relayer_account;
-    relayer.relayer = ctx.accounts.relayer.key();
-    relayer.is_active = true;
-    relayer.bump = ctx.bumps.relayer_account;
-
-    // Initialize delegate PDA
     let delegate = &mut ctx.accounts.delegate;
     delegate.bump = ctx.bumps.delegate;
 
@@ -104,7 +76,6 @@ pub fn initialize_handler(ctx: Context<Initialize>) -> Result<()> {
     msg!("Authority: {}", config.authority);
     msg!("Emergency admin: {}", config.emergency_admin);
     msg!("Initial server signer: {}", server_signer.signer);
-    msg!("Initial relayer: {}", relayer.relayer);
     msg!("Delegate PDA: {}", ctx.accounts.delegate.key());
 
     Ok(())

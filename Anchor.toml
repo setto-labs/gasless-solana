@@ -10,7 +10,7 @@ members = ["."]
 
 # Program IDs - auto-updated by deploy script (npm run deploy)
 [programs.localnet]
-setto_payment = "5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB"
+setto_payment = "DXxCKeaee3YD1HeA1UcBxTiHGZYFDZQ34Q2bjY87Nyoc"
 
 [programs.devnet]
 setto_payment = "DXxCKeaee3YD1HeA1UcBxTiHGZYFDZQ34Q2bjY87Nyoc"
@@ -26,4 +26,4 @@ cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

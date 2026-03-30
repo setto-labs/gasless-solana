@@ -24,39 +24,59 @@ pub mod setto_payment {
     use super::*;
 
     // ============================================
-    // Core Functions
+    // Core Functions — Direct Payment
+    // ============================================
+
+    /// Process a direct payment (user signs)
+    /// sender → recipient (amount) + sender → feeWallet (protocolFee)
+    pub fn process_direct_payment(
+        ctx: Context<ProcessDirectPayment>,
+        params: DirectPaymentParams,
+    ) -> Result<()> {
+        instructions::direct_payment::process_direct_payment_handler(ctx, params)
+    }
+
+    /// Process a direct payment via delegate (gasless, user doesn't sign)
+    /// Delegate PDA transfers on behalf of user
+    pub fn process_direct_payment_delegated(
+        ctx: Context<ProcessDirectPaymentDelegated>,
+        params: DirectPaymentDelegatedParams,
+    ) -> Result<()> {
+        instructions::direct_payment_delegated::process_direct_payment_delegated_handler(
+            ctx, params,
+        )
+    }
+
+    // ============================================
+    // Core Functions — Pool Payment
+    // ============================================
+
+    /// Process a pool payment (user signs)
+    /// sender → pool (totalAmount), single transfer, no fee split on-chain
+    pub fn process_pool_payment(
+        ctx: Context<ProcessPoolPayment>,
+        params: PoolPaymentParams,
+    ) -> Result<()> {
+        instructions::pool_payment::process_pool_payment_handler(ctx, params)
+    }
+
+    /// Process a pool payment via delegate (gasless, user doesn't sign)
+    /// Delegate PDA transfers on behalf of user
+    pub fn process_pool_payment_delegated(
+        ctx: Context<ProcessPoolPaymentDelegated>,
+        params: PoolPaymentDelegatedParams,
+    ) -> Result<()> {
+        instructions::pool_payment_delegated::process_pool_payment_delegated_handler(ctx, params)
+    }
+
+    // ============================================
+    // Initialize
     // ============================================
 
     /// Initialize program config
     /// Only called once by deployer
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         instructions::initialize::initialize_handler(ctx)
-    }
-
-    /// Process a single payment (user signs)
-    /// - Verifies server signature (Ed25519) from authorized signer
-    /// - Checks deadline
-    /// - Transfers amount to pool
-    /// - Transfers fee to platform fee recipient
-    /// - Logs payment info for tracking
-    pub fn process_payment(
-        ctx: Context<ProcessPayment>,
-        params: ProcessPaymentParams,
-    ) -> Result<()> {
-        instructions::process_payment::process_payment_handler(ctx, params)
-    }
-
-    /// Process a single payment via delegate (gasless, user doesn't sign)
-    /// - User must have approved Delegate PDA via SPL Token approve
-    /// - Verifies server signature (Ed25519) from authorized signer
-    /// - Checks deadline
-    /// - Delegate PDA transfers tokens on behalf of user
-    /// - Logs payment info for tracking
-    pub fn process_payment_delegated(
-        ctx: Context<ProcessPaymentDelegated>,
-        params: ProcessPaymentDelegatedParams,
-    ) -> Result<()> {
-        instructions::process_payment_delegated::process_payment_delegated_handler(ctx, params)
     }
 
     // ============================================
@@ -83,16 +103,6 @@ pub mod setto_payment {
         instructions::admin::emergency_remove_server_signer_handler(ctx)
     }
 
-    /// Emergency add relayer (when key rotation needed urgently)
-    pub fn emergency_add_relayer(ctx: Context<EmergencyAddRelayer>) -> Result<()> {
-        instructions::admin::emergency_add_relayer_handler(ctx)
-    }
-
-    /// Emergency remove relayer (when key leaked)
-    pub fn emergency_remove_relayer(ctx: Context<EmergencyRemoveRelayer>) -> Result<()> {
-        instructions::admin::emergency_remove_relayer_handler(ctx)
-    }
-
     // ============================================
     // Authority Functions
     // ============================================
@@ -115,15 +125,5 @@ pub mod setto_payment {
     /// Transfer authority to new address
     pub fn transfer_authority(ctx: Context<TransferAuthority>) -> Result<()> {
         instructions::admin::transfer_authority_handler(ctx)
-    }
-
-    /// Add a new relayer
-    pub fn add_relayer(ctx: Context<AddRelayer>) -> Result<()> {
-        instructions::admin::add_relayer_handler(ctx)
-    }
-
-    /// Remove a relayer
-    pub fn remove_relayer(ctx: Context<RemoveRelayer>) -> Result<()> {
-        instructions::admin::remove_relayer_handler(ctx)
     }
 }

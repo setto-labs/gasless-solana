@@ -13,8 +13,8 @@ Enables gasless token transfers using:
 
 | Network | Program ID |
 |---------|------------|
-| Devnet | 5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB |
-| Mainnet | 5iZ49Z39KrQ8MLDq8gUWtAMmSJ5mTcUSvPvjau8NvNVB |
+| Devnet | DXxCKeaee3YD1HeA1UcBxTiHGZYFDZQ34Q2bjY87Nyoc |
+| Mainnet | DXxCKeaee3YD1HeA1UcBxTiHGZYFDZQ34Q2bjY87Nyoc |
 
 ## Security
 

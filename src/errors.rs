@@ -29,9 +29,6 @@ pub enum PaymentError {
     #[msg("Invalid address")]
     InvalidAddress,
 
-    #[msg("Unauthorized relayer")]
-    UnauthorizedRelayer,
-
     #[msg("Delegate not set")]
     DelegateNotSet,
 
@@ -43,4 +40,10 @@ pub enum PaymentError {
 
     #[msg("Invalid fee recipient")]
     InvalidFeeRecipient,
+
+    #[msg("Invalid token program")]
+    InvalidTokenProgram,
+
+    #[msg("Amount mismatch")]
+    AmountMismatch,
 }
